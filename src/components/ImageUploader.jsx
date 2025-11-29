@@ -15,7 +15,9 @@ export function ImageUploader({ onImageSelect, isProcessing }) {
         accept: {
             'image/png': ['.png'],
             'image/jpeg': ['.jpg', '.jpeg'],
-            'image/webp': ['.webp']
+            'image/webp': ['.webp'],
+            'image/heic': ['.heic'],
+            'image/heif': ['.heif']
         },
         maxFiles: 1,
         disabled: isProcessing
@@ -51,7 +53,7 @@ export function ImageUploader({ onImageSelect, isProcessing }) {
                         {isDragActive ? "Drop image here" : "Upload an image"}
                     </h3>
                     <p className="text-sm text-zinc-400 max-w-xs">
-                        Drag and drop or click to select a PNG, JPG or WebP image
+                        Drag and drop or click to select a PNG, JPG, WebP or HEIC image
                     </p>
                 </div>
             </div>

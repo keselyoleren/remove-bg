@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { removeBackground } from '@imgly/background-removal';
+import heic2any from 'heic2any';
 import { ImageUploader } from './components/ImageUploader';
 import { ResultViewer } from './components/ResultViewer';
 import { Loader2, Sparkles } from 'lucide-react';
@@ -14,15 +15,30 @@ function App() {
 
 
   const handleImageSelect = useCallback(async (file) => {
-    setOriginalImage(file);
+    // setOriginalImage(file); // Move this down to after conversion
     setIsProcessing(true);
     setError(null);
     setProgress(0);
     setProgressText("Initializing...");
 
     try {
+      let imageToProcess = file;
+
+      // Handle HEIC conversion
+      if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
+        setProgressText("Converting HEIC...");
+        const convertedBlob = await heic2any({
+          blob: file,
+          toType: 'image/jpeg',
+          quality: 0.8
+        });
+        imageToProcess = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+      }
+
+      setOriginalImage(imageToProcess);
+
       // Configure to use public assets if needed, but default usually works
-      const blob = await removeBackground(file, {
+      const blob = await removeBackground(imageToProcess, {
         progress: (key, current, total) => {
           const percent = Math.round((current / total) * 100);
           setProgress(percent);
