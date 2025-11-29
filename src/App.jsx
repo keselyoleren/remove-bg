@@ -7,19 +7,26 @@ import { Loader2, Sparkles } from 'lucide-react';
 function App() {
   const [originalImage, setOriginalImage] = useState(null);
   const [processedImage, setProcessedImage] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [progressText, setProgressText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
+
 
   const handleImageSelect = useCallback(async (file) => {
     setOriginalImage(file);
     setIsProcessing(true);
     setError(null);
+    setProgress(0);
+    setProgressText("Initializing...");
 
     try {
       // Configure to use public assets if needed, but default usually works
       const blob = await removeBackground(file, {
         progress: (key, current, total) => {
-          console.log(`Downloading ${key}: ${current} of ${total}`);
+          const percent = Math.round((current / total) * 100);
+          setProgress(percent);
+          setProgressText(`Downloading ${key}...`);
         }
       });
       setProcessedImage(blob);
@@ -28,6 +35,7 @@ function App() {
       setError("Failed to remove background. Please try again.");
     } finally {
       setIsProcessing(false);
+      setProgress(0);
     }
   }, []);
 
@@ -35,6 +43,7 @@ function App() {
     setOriginalImage(null);
     setProcessedImage(null);
     setError(null);
+    setProgress(0);
   };
 
   return (
@@ -73,9 +82,22 @@ function App() {
           ) : (
             <>
               {isProcessing ? (
-                <div className="flex flex-col items-center gap-4 p-12">
+                <div className="flex flex-col items-center gap-6 p-12 w-full max-w-md">
                   <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-                  <p className="text-zinc-400 animate-pulse">Processing image...</p>
+
+                  <div className="w-full space-y-2">
+                    <div className="flex justify-between text-sm text-zinc-400">
+                      <span>{progressText || "Processing..."}</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300 ease-out"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+
                   <p className="text-xs text-zinc-500">First run may take a moment to load models</p>
                 </div>
               ) : (
