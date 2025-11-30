@@ -9,8 +9,57 @@ import { Logo } from './components/Logo';
 import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from './contexts/AuthContext';
 
+class GlobalErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center p-6 text-center">
+          <div className="bg-red-500/10 border border-red-500/20 p-8 rounded-2xl max-w-md">
+            <h2 className="text-2xl font-bold text-red-400 mb-4">Something went wrong</h2>
+            <p className="text-zinc-400 mb-6">
+              The application encountered an unexpected error.
+            </p>
+            <pre className="bg-black/50 p-4 rounded-lg text-left text-xs text-red-300 overflow-auto max-h-40 mb-6">
+              {this.state.error?.toString()}
+            </pre>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-white text-zinc-950 rounded-lg font-semibold hover:bg-zinc-200 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 function App() {
-  const { currentUser, logout } = useAuth();
+  return (
+    <GlobalErrorBoundary>
+      <AppContent />
+    </GlobalErrorBoundary>
+  );
+}
+
+function AppContent() {
+  const { currentUser, logout, loading } = useAuth();
   const [images, setImages] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -143,6 +192,14 @@ function App() {
       console.error("Failed to logout", error);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return <LandingPage />;
