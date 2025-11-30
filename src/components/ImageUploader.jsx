@@ -6,7 +6,7 @@ import { cn } from '../lib/utils';
 export function ImageUploader({ onImageSelect, isProcessing }) {
     const onDrop = useCallback((acceptedFiles) => {
         if (acceptedFiles && acceptedFiles.length > 0) {
-            onImageSelect(acceptedFiles[0]);
+            onImageSelect(acceptedFiles);
         }
     }, [onImageSelect]);
 
@@ -19,7 +19,6 @@ export function ImageUploader({ onImageSelect, isProcessing }) {
             'image/heic': ['.heic'],
             'image/heif': ['.heif']
         },
-        maxFiles: 1,
         disabled: isProcessing
     });
 
@@ -50,10 +49,10 @@ export function ImageUploader({ onImageSelect, isProcessing }) {
 
                 <div className="space-y-2">
                     <h3 className="text-xl font-semibold text-zinc-200">
-                        {isDragActive ? "Drop image here" : "Upload an image"}
+                        {isDragActive ? "Drop images here" : "Upload images"}
                     </h3>
                     <p className="text-sm text-zinc-400 max-w-xs">
-                        Drag and drop or click to select a PNG, JPG, WebP or HEIC image
+                        Drag and drop or click to select PNG, JPG, WebP or HEIC images
                     </p>
                 </div>
             </div>
