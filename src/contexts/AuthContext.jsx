@@ -1,18 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from '../lib/firebase';
-import {
-    GoogleAuthProvider,
-    signInWithRedirect,
-    signOut,
-    onAuthStateChanged,
-    getRedirectResult,
-    setPersistence,
-    browserLocalPersistence
-} from 'firebase/auth';
+import { auth, googleProvider } from '../lib/firebase';
+import { signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 
 const AuthContext = createContext();
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
     return useContext(AuthContext);
 }
@@ -22,14 +13,12 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     async function login() {
-        const provider = new GoogleAuthProvider();
-        try {
-            await setPersistence(auth, browserLocalPersistence);
-            return signInWithRedirect(auth, provider);
-        } catch (error) {
-            console.error("Login setup error:", error);
-            throw error;
-        }
+        // Try popup first, but we might want to switch to redirect if popup fails consistently
+        return signInWithPopup(auth, googleProvider);
+    }
+
+    async function loginWithRedirect() {
+        return signInWithRedirect(auth, googleProvider);
     }
 
     function logout() {
@@ -37,53 +26,29 @@ export function AuthProvider({ children }) {
     }
 
     useEffect(() => {
-        console.log("AuthProvider mounted");
-        let isMounted = true;
-
-        const initAuth = async () => {
-            try {
-                // Check for redirect result first
-                const redirectResult = await getRedirectResult(auth);
-                if (redirectResult && isMounted) {
-                    console.log("Redirect result found:", redirectResult.user.email);
-                    setCurrentUser(redirectResult.user);
-                }
-            } catch (error) {
-                console.error("Redirect auth error:", error);
-            }
-        };
-
-        initAuth();
-
         const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (!isMounted) return;
-            console.log("Auth state changed:", user ? `User: ${user.email}` : "No user");
             setCurrentUser(user);
             setLoading(false);
         });
 
-        return () => {
-            isMounted = false;
-            unsubscribe();
-        };
+        // Handle redirect result
+        getRedirectResult(auth).catch((error) => {
+            console.error("Redirect auth error:", error);
+        });
+
+        return unsubscribe;
     }, []);
 
     const value = {
         currentUser,
         login,
+        loginWithRedirect,
         logout
     };
 
     return (
         <AuthContext.Provider value={value}>
-            {loading ? (
-                <div className="min-h-screen bg-zinc-950 flex items-center justify-center flex-col gap-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                    <p className="text-zinc-500 text-sm">Verifying authentication...</p>
-                </div>
-            ) : (
-                children
-            )}
+            {!loading && children}
         </AuthContext.Provider>
     );
 }

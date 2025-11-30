@@ -1,17 +1,31 @@
 import React from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
-import { Sparkles, Upload, Zap, Download, ArrowRight } from 'lucide-react';
+import { ArrowRight, Upload, Zap, Download, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Logo } from './Logo';
 import { useAuth } from '../contexts/AuthContext';
 
 export function LandingPage() {
-    const { login } = useAuth();
+    const { login, loginWithRedirect } = useAuth();
+
+    const [error, setError] = React.useState(null);
 
     const handleLogin = async () => {
         try {
+            setError(null);
             await login();
         } catch (error) {
             console.error("Failed to login", error);
+            if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/popup-blocked') {
+                try {
+                    await loginWithRedirect();
+                } catch (redirectError) {
+                    console.error("Redirect login failed", redirectError);
+                    setError("Failed to login. Please try again.");
+                }
+            } else {
+                setError("Failed to login. Please try again.");
+            }
         }
     };
 
@@ -37,27 +51,25 @@ export function LandingPage() {
     };
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col relative overflow-hidden">
+        <div className="min-h-screen bg-zinc-950 text-white flex flex-col font-sans selection:bg-purple-500 selection:text-white relative overflow-hidden">
             {/* Background Gradients */}
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[128px] pointer-events-none" />
-            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[128px] pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-500/20 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/20 rounded-full blur-[120px]" />
+            </div>
 
             {/* Header */}
-            <header className="p-6 border-b border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg shadow-purple-500/20">
-                            <Sparkles className="w-6 h-6 text-white" />
-                        </div>
-                        <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
-                            BackgroundRemover
-                        </h1>
+            <header className="px-6 py-6 sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-white/10">
+                <div className="max-w-6xl mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                        <Logo className="w-10 h-10" />
+                        <span className="text-lg font-bold tracking-tight">Remove Background</span>
                     </div>
                     <button
                         onClick={handleLogin}
-                        className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-zinc-200 transition-colors"
+                        className="px-5 py-2 text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
                     >
-                        Login
+                        Log in
                     </button>
                 </div>
             </header>
@@ -68,43 +80,56 @@ export function LandingPage() {
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
-                    className="max-w-4xl w-full text-center space-y-12"
+                    className="max-w-4xl w-full text-center space-y-16 py-20"
                 >
-                    <motion.div variants={itemVariants} className="space-y-6">
-                        <h2 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight">
-                            Remove Backgrounds <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-                                Like Magic
+                    {error && (
+                        <div className="p-4 bg-red-500/10 text-red-400 text-sm rounded-xl border border-red-500/20 max-w-sm mx-auto">
+                            {error}
+                        </div>
+                    )}
+
+                    <motion.div variants={itemVariants} className="space-y-8">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-zinc-300 text-xs font-medium uppercase tracking-wide">
+                            <span className="w-2 h-2 rounded-full bg-green-500" />
+                            Batch Processing Ready
+                        </div>
+
+                        <h1 className="text-6xl md:text-6xl font-bold tracking-tight text-white leading-[0.95]">
+                            Remove backgrounds. <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
+                                Just like magic.
                             </span>
-                        </h2>
-                        <p className="text-xl text-zinc-400 max-w-2xl mx-auto">
-                            Professional quality background removal in seconds. Free, fast, and secure.
+                        </h1>
+
+                        <p className="text-xl text-zinc-400 max-w-xl mx-auto leading-relaxed">
+                            The simplest way to remove image backgrounds. <br />
+                            <span className="text-white font-medium">Free, fast, and privacy-focused.</span>
                         </p>
                     </motion.div>
 
                     <motion.div variants={itemVariants}>
                         <button
                             onClick={handleLogin}
-                            className="group relative inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-lg font-semibold text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all transform hover:-translate-y-1"
+                            className="group inline-flex items-center gap-3 px-8 py-4 bg-white text-zinc-950 rounded-full text-lg font-bold hover:bg-zinc-200 transition-all hover:scale-105 active:scale-95"
                         >
-                            <span>Get Started for Free</span>
+                            <span>Start Removing</span>
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </button>
                     </motion.div>
 
-                    {/* How it works */}
-                    <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-12">
+                    {/* Features Grid */}
+                    <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-16">
                         {[
-                            { icon: Upload, title: "Upload Image", desc: "Drag & drop any image (JPG, PNG, HEIC)" },
-                            { icon: Zap, title: "Auto Process", desc: "AI automatically removes the background" },
-                            { icon: Download, title: "Download", desc: "Get your transparent PNG instantly" }
+                            { icon: Upload, title: "Upload", desc: "Drag & drop any image" },
+                            { icon: Zap, title: "Process", desc: "Instant AI removal" },
+                            { icon: Download, title: "Download", desc: "Save as transparent PNG" }
                         ].map((step, index) => (
-                            <div key={index} className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 backdrop-blur-sm hover:bg-zinc-800/50 transition-colors">
-                                <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-zinc-800 flex items-center justify-center text-blue-400">
+                            <div key={index} className="flex flex-col items-center space-y-4 p-6 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-300">
+                                <div className="p-4 rounded-2xl bg-white/10 text-white">
                                     <step.icon className="w-6 h-6" />
                                 </div>
-                                <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
-                                <p className="text-sm text-zinc-400">{step.desc}</p>
+                                <h3 className="text-lg font-bold text-white">{step.title}</h3>
+                                <p className="text-zinc-400 text-sm">{step.desc}</p>
                             </div>
                         ))}
                     </motion.div>
@@ -112,8 +137,8 @@ export function LandingPage() {
             </main>
 
             {/* Footer */}
-            <footer className="p-6 text-center text-zinc-600 text-sm border-t border-zinc-900">
-                <p>© 2025 Background Image Remover. All rights reserved.</p>
+            <footer className="py-8 text-center text-zinc-600 text-sm">
+                <p>© 2025 Remove Background by <a href="https://github.com/keselyoleren" target="_blank" rel="noopener noreferrer">keselyoleren</a></p>
             </footer>
         </div>
     );

@@ -3,10 +3,14 @@ import { removeBackground } from '@imgly/background-removal';
 import heic2any from 'heic2any';
 import { ImageUploader } from './components/ImageUploader';
 import { ImageList } from './components/ImageList';
-import { Sparkles, Trash2, Download } from 'lucide-react';
+import { LandingPage } from './components/LandingPage';
+import { Trash2, Download, LogOut, Loader2 } from 'lucide-react';
+import { Logo } from './components/Logo';
 import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from './contexts/AuthContext';
 
 function App() {
+  const { currentUser, logout } = useAuth();
   const [images, setImages] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -132,48 +136,75 @@ function App() {
     setImages([]);
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Failed to logout", error);
+    }
+  };
+
+  if (!currentUser) {
+    return <LandingPage />;
+  }
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-purple-500 selection:text-white">
       {/* Header */}
-      <header className="p-6 border-b border-zinc-800/50 bg-zinc-900/50 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg shadow-purple-500/20">
-            <Sparkles className="w-6 h-6 text-white" />
+      <header className="px-6 py-6 sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-white/10">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Logo className="w-10 h-10" />
+            <span className="text-lg font-bold tracking-tight">Remove Background</span>
           </div>
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
-            Background Image Remover
-          </h1>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-zinc-400 hidden md:inline-block font-medium">
+              {currentUser.email}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center p-6 relative overflow-y-auto">
         {/* Background Gradients */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[128px] pointer-events-none fixed" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[128px] pointer-events-none fixed" />
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-500/10 rounded-full blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[120px]" />
+        </div>
 
-        <div className="w-full max-w-4xl flex flex-col items-center gap-8 z-10 pb-20">
-          <div className="text-center space-y-4 mb-4">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Remove Backgrounds <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-                Instantly & Free
-              </span>
+        <div className="w-full max-w-4xl flex flex-col items-center gap-10 z-10 pb-20 pt-8">
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-white">
+              Upload Images
             </h2>
+            <p className="text-zinc-400 text-lg font-medium">
+              We'll remove the background automatically.
+            </p>
           </div>
 
           <ImageUploader onImageSelect={handleImageSelect} isProcessing={isProcessing} />
 
           {images.length > 0 && (
-            <div className="w-full space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex items-center justify-between px-2">
-                <h3 className="text-lg font-medium text-zinc-300">
-                  Processed Images ({images.length})
+            <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center justify-between px-2 border-b border-white/10 pb-4">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  Processed Images
+                  <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-zinc-300 text-sm font-bold">
+                    {images.length}
+                  </span>
                 </h3>
                 <div className="flex gap-2">
                   <button
                     onClick={handleClearAll}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors font-medium"
                   >
                     <Trash2 className="w-4 h-4" />
                     Clear All
@@ -181,7 +212,7 @@ function App() {
                   <button
                     onClick={handleDownloadAll}
                     disabled={!images.some(img => img.status === 'completed')}
-                    className="flex items-center gap-2 px-4 py-1.5 text-sm bg-zinc-100 text-zinc-900 font-medium rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-2 px-5 py-2 text-sm bg-white text-zinc-950 font-semibold rounded-xl hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-white/10 hover:shadow-white/20 hover:-translate-y-0.5"
                   >
                     <Download className="w-4 h-4" />
                     Download All
@@ -200,8 +231,8 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="p-6 text-center text-zinc-600 text-sm border-t border-zinc-800/50">
-        <p>© 2025 Background Image Remover.</p>
+      <footer className="py-8 text-center text-zinc-600 text-sm border-t border-white/5">
+        <p>© 2025 Remove Background by <a href="https://github.com/keselyoleren" target="_blank" rel="noopener noreferrer">keselyoleren</a></p>
       </footer>
     </div>
   );
