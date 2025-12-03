@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
     signInWithPopup,
+    signInWithRedirect,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    getRedirectResult
 } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
 
@@ -12,11 +14,37 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const redirectCheckRef = React.useRef(false);
+
     useEffect(() => {
+        let redirectCheckComplete = false;
+
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             setUser(currentUser);
-            setLoading(false);
+            if (currentUser) {
+                setLoading(false);
+            } else if (redirectCheckComplete) {
+                setLoading(false);
+            }
         });
+
+        if (!redirectCheckRef.current) {
+            redirectCheckRef.current = true;
+            getRedirectResult(auth)
+                .then((result) => {
+                    redirectCheckComplete = true;
+                    // If result exists, user is logged in. onAuthStateChanged will handle it.
+                    // If result is null and no current user, we are not logged in.
+                    if (!result && !auth.currentUser) {
+                        setLoading(false);
+                    }
+                })
+                .catch((error) => {
+                    console.error("Redirect auth error:", error);
+                    redirectCheckComplete = true;
+                    setLoading(false);
+                });
+        }
 
         return () => unsubscribe();
     }, []);
@@ -26,6 +54,15 @@ export const AuthProvider = ({ children }) => {
             await signInWithPopup(auth, googleProvider);
         } catch (error) {
             console.error('Error signing in with Google:', error);
+            throw error;
+        }
+    };
+
+    const signInWithGoogleRedirect = async () => {
+        try {
+            await signInWithRedirect(auth, googleProvider);
+        } catch (error) {
+            console.error('Error signing in with Google Redirect:', error);
             throw error;
         }
     };
@@ -40,7 +77,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, signInWithGoogle, logout }}>
+        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithGoogleRedirect, logout }}>
             {!loading && children}
         </AuthContext.Provider>
     );

@@ -5,7 +5,7 @@ import { Logo } from './Logo';
 import { useAuth } from '../contexts/AuthContext';
 
 export function LandingPage() {
-    const { signInWithGoogle } = useAuth();
+    const { signInWithGoogle, signInWithGoogleRedirect } = useAuth();
 
     const [error, setError] = React.useState(null);
     const [isLoading, setIsLoading] = React.useState(false);
@@ -24,9 +24,14 @@ export function LandingPage() {
 
             // CASE 1: The user manually closed the popup
             if (error.code === 'auth/popup-closed-by-user') {
-                console.log("User closed the popup. Login cancelled.");
-                // Do not set an error message here, just stop loading
-                setIsLoading(false);
+                console.log("User closed the popup. Attempting redirect fallback...");
+                try {
+                    await signInWithGoogleRedirect();
+                } catch (redirectError) {
+                    console.error("Redirect login failed", redirectError);
+                    setError("Login failed. Please try again.");
+                    setIsLoading(false);
+                }
                 return;
             }
 
@@ -34,7 +39,7 @@ export function LandingPage() {
             if (error.code === 'auth/popup-blocked') {
                 try {
                     console.log("Popup blocked, attempting redirect login...");
-                    await signInWithGoogle();
+                    await signInWithGoogleRedirect();
                     // Note: redirect will reload page, so no need to set isLoading false usually
                 } catch (redirectError) {
                     console.error("Redirect login failed", redirectError);
