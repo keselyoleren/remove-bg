@@ -15,6 +15,7 @@ export function LandingPage() {
             setError(null);
             await login();
         } catch (error) {
+            console.log(error);
             console.error("Failed to login", error);
             if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/popup-blocked') {
                 try {
@@ -24,6 +25,7 @@ export function LandingPage() {
                     setError("Failed to login. Please try again.");
                 }
             } else {
+                console.log("Other error", error);
                 setError("Failed to login. Please try again.");
             }
         }
