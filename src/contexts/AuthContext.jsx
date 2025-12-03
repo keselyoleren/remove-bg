@@ -13,12 +13,7 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     async function login() {
-        // Try popup first, but we might want to switch to redirect if popup fails consistently
         return signInWithPopup(auth, googleProvider);
-    }
-
-    async function loginWithRedirect() {
-        return signInWithRedirect(auth, googleProvider);
     }
 
     function logout() {
@@ -26,15 +21,30 @@ export function AuthProvider({ children }) {
     }
 
     useEffect(() => {
+        let redirectCheckComplete = false;
+
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setCurrentUser(user);
-            setLoading(false);
+            if (user) {
+                setLoading(false);
+            } else if (redirectCheckComplete) {
+                setLoading(false);
+            }
         });
 
         // Handle redirect result
-        getRedirectResult(auth).catch((error) => {
-            console.error("Redirect auth error:", error);
-        });
+        getRedirectResult(auth)
+            .then(() => {
+                redirectCheckComplete = true;
+                if (!auth.currentUser) {
+                    setLoading(false);
+                }
+            })
+            .catch((error) => {
+                console.error("Redirect auth error:", error);
+                redirectCheckComplete = true;
+                setLoading(false);
+            });
 
         return unsubscribe;
     }, []);
@@ -42,7 +52,6 @@ export function AuthProvider({ children }) {
     const value = {
         currentUser,
         login,
-        // loginWithRedirect,
         logout
     };
 

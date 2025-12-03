@@ -5,7 +5,7 @@ import { Logo } from './Logo';
 import { useAuth } from '../contexts/AuthContext';
 
 export function LandingPage() {
-    const { login, loginWithRedirect } = useAuth();
+    const { login } = useAuth();
 
     const [error, setError] = React.useState(null);
     const [isLoading, setIsLoading] = React.useState(false);
@@ -21,7 +21,7 @@ export function LandingPage() {
             await login();
         } catch (error) {
             console.error("Login attempt failed:", error);
-            
+
             // CASE 1: The user manually closed the popup
             if (error.code === 'auth/popup-closed-by-user') {
                 console.log("User closed the popup. Login cancelled.");
@@ -34,7 +34,7 @@ export function LandingPage() {
             if (error.code === 'auth/popup-blocked') {
                 try {
                     console.log("Popup blocked, attempting redirect login...");
-                    await loginWithRedirect();
+                    await login();
                     // Note: redirect will reload page, so no need to set isLoading false usually
                 } catch (redirectError) {
                     console.error("Redirect login failed", redirectError);
