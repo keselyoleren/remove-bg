@@ -1,7 +1,6 @@
 import React from 'react';
-// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
-import { ArrowRight, Upload, Zap, Download, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowRight, Upload, Zap, Download, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { Logo } from './Logo';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -9,25 +8,45 @@ export function LandingPage() {
     const { login, loginWithRedirect } = useAuth();
 
     const [error, setError] = React.useState(null);
+    const [isLoading, setIsLoading] = React.useState(false);
 
     const handleLogin = async () => {
+        // Prevent multiple clicks while login is processing
+        if (isLoading) return;
+
+        setIsLoading(true);
+        setError(null);
+
         try {
-            setError(null);
             await login();
         } catch (error) {
-            console.log(error);
-            console.error("Failed to login", error);
-            if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/popup-blocked') {
+            console.error("Login attempt failed:", error);
+            
+            // CASE 1: The user manually closed the popup
+            if (error.code === 'auth/popup-closed-by-user') {
+                console.log("User closed the popup. Login cancelled.");
+                // Do not set an error message here, just stop loading
+                setIsLoading(false);
+                return;
+            }
+
+            // CASE 2: The browser blocked the popup (AdBlock or settings)
+            if (error.code === 'auth/popup-blocked') {
                 try {
+                    console.log("Popup blocked, attempting redirect login...");
                     await loginWithRedirect();
+                    // Note: redirect will reload page, so no need to set isLoading false usually
                 } catch (redirectError) {
                     console.error("Redirect login failed", redirectError);
-                    setError("Failed to login. Please try again.");
+                    setError("Login failed. Please check your popup blocker settings.");
+                    setIsLoading(false);
                 }
-            } else {
-                console.log("Other error", error);
-                setError("Failed to login. Please try again.");
+                return;
             }
+
+            // CASE 3: Generic error
+            setError("Failed to login. Please try again.");
+            setIsLoading(false);
         }
     };
 
@@ -69,9 +88,10 @@ export function LandingPage() {
                     </div>
                     <button
                         onClick={handleLogin}
-                        className="px-5 py-2 text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
+                        disabled={isLoading}
+                        className="px-5 py-2 text-sm font-semibold text-zinc-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Log in
+                        {isLoading ? 'Loading...' : 'Log in'}
                     </button>
                 </div>
             </header>
@@ -85,7 +105,8 @@ export function LandingPage() {
                     className="max-w-4xl w-full text-center space-y-16 py-20"
                 >
                     {error && (
-                        <div className="p-4 bg-red-500/10 text-red-400 text-sm rounded-xl border border-red-500/20 max-w-sm mx-auto">
+                        <div className="p-4 bg-red-500/10 text-red-400 text-sm rounded-xl border border-red-500/20 max-w-sm mx-auto flex items-center justify-center gap-2">
+                            <AlertCircle className="w-4 h-4" />
                             {error}
                         </div>
                     )}
@@ -112,10 +133,20 @@ export function LandingPage() {
                     <motion.div variants={itemVariants}>
                         <button
                             onClick={handleLogin}
-                            className="group inline-flex items-center gap-3 px-8 py-4 bg-white text-zinc-950 rounded-full text-lg font-bold hover:bg-zinc-200 transition-all hover:scale-105 active:scale-95"
+                            disabled={isLoading}
+                            className="group inline-flex items-center gap-3 px-8 py-4 bg-white text-zinc-950 rounded-full text-lg font-bold hover:bg-zinc-200 transition-all hover:scale-105 active:scale-95 disabled:opacity-70 disabled:hover:scale-100 disabled:cursor-not-allowed"
                         >
-                            <span>Start Removing</span>
-                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <span>Connecting...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>Start Removing</span>
+                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                </>
+                            )}
                         </button>
                     </motion.div>
 
@@ -140,7 +171,7 @@ export function LandingPage() {
 
             {/* Footer */}
             <footer className="py-8 text-center text-zinc-600 text-sm">
-                <p>© 2025 Remove Background by <a href="https://github.com/keselyoleren" target="_blank" rel="noopener noreferrer">keselyoleren</a></p>
+                <p>© 2025 Remove Background by <a href="https://github.com/keselyoleren" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">keselyoleren</a></p>
             </footer>
         </div>
     );
