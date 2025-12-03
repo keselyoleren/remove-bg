@@ -59,7 +59,7 @@ function App() {
 }
 
 function AppContent() {
-  const { currentUser, logout, loading } = useAuth();
+  const { user, logout, loading } = useAuth();
   const [images, setImages] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -201,7 +201,7 @@ function AppContent() {
     );
   }
 
-  if (!currentUser) {
+  if (!user) {
     return <LandingPage />;
   }
 
@@ -216,7 +216,7 @@ function AppContent() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-zinc-400 hidden md:inline-block font-medium">
-              {currentUser.email}
+              {user.email}
             </span>
             <button
               onClick={handleLogout}

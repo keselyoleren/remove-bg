@@ -5,7 +5,7 @@ import { Logo } from './Logo';
 import { useAuth } from '../contexts/AuthContext';
 
 export function LandingPage() {
-    const { login } = useAuth();
+    const { signInWithGoogle } = useAuth();
 
     const [error, setError] = React.useState(null);
     const [isLoading, setIsLoading] = React.useState(false);
@@ -18,7 +18,7 @@ export function LandingPage() {
         setError(null);
 
         try {
-            await login();
+            await signInWithGoogle();
         } catch (error) {
             console.error("Login attempt failed:", error);
 
@@ -34,7 +34,7 @@ export function LandingPage() {
             if (error.code === 'auth/popup-blocked') {
                 try {
                     console.log("Popup blocked, attempting redirect login...");
-                    await login();
+                    await signInWithGoogle();
                     // Note: redirect will reload page, so no need to set isLoading false usually
                 } catch (redirectError) {
                     console.error("Redirect login failed", redirectError);

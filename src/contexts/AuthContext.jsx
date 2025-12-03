@@ -1,63 +1,55 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import {
+    signInWithPopup,
+    signOut,
+    onAuthStateChanged
+} from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
-import { signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 
-const AuthContext = createContext();
+const AuthContext = createContext(undefined);
 
-export function useAuth() {
-    return useContext(AuthContext);
-}
-
-export function AuthProvider({ children }) {
-    const [currentUser, setCurrentUser] = useState(null);
+export const AuthProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    async function login() {
-        return signInWithPopup(auth, googleProvider);
-    }
-
-    function logout() {
-        return signOut(auth);
-    }
-
     useEffect(() => {
-        let redirectCheckComplete = false;
-
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setCurrentUser(user);
-            if (user) {
-                setLoading(false);
-            } else if (redirectCheckComplete) {
-                setLoading(false);
-            }
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+            setLoading(false);
         });
 
-        // Handle redirect result
-        getRedirectResult(auth)
-            .then(() => {
-                redirectCheckComplete = true;
-                if (!auth.currentUser) {
-                    setLoading(false);
-                }
-            })
-            .catch((error) => {
-                console.error("Redirect auth error:", error);
-                redirectCheckComplete = true;
-                setLoading(false);
-            });
-
-        return unsubscribe;
+        return () => unsubscribe();
     }, []);
 
-    const value = {
-        currentUser,
-        login,
-        logout
+    const signInWithGoogle = async () => {
+        try {
+            await signInWithPopup(auth, googleProvider);
+        } catch (error) {
+            console.error('Error signing in with Google:', error);
+            throw error;
+        }
+    };
+
+    const logout = async () => {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error('Error signing out:', error);
+            throw error;
+        }
     };
 
     return (
-        <AuthContext.Provider value={value}>
+        <AuthContext.Provider value={{ user, loading, signInWithGoogle, logout }}>
             {!loading && children}
         </AuthContext.Provider>
     );
-}
+};
+
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+};
